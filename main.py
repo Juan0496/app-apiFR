@@ -17,6 +17,7 @@ import numpy as np
 import os
 import math
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials,HTTPBearer, HTTPAuthorizationCredentials
+from proces import prueba
 app = FastAPI()
 
 class Usuario(BaseModel):
@@ -28,6 +29,7 @@ security = HTTPBearer()
 cred = credentials.Certificate("./assets/homesecurity.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+
 
 
 @app.post('/sigin')
@@ -61,8 +63,24 @@ async def get_current_user_ws(websocket: WebSocket):
 
 @app.websocket('/procesamiento')
 async def protected_route(websocket: WebSocket,current_user: dict = Depends(get_current_user_ws)):
-    await websocket.accept()
-    
+    await websocket.accept() 
+    enviar=False
+    try:
+        while True:
+            data = await websocket.receive_text()
+            
+            if data== "on":               
+                enviar=True
+                await prueba(websocket, enviar)
+            else:
+                print("finde prueba")
+  
+    except WebSocketDisconnect:
+     
+            print("Client disconnected")
+
+
+    """
     path_img_andrea="./andrea.jpg"  
     if not os.path.exists(path_img_andrea):
             await websocket.send_text("Error: File not found")
@@ -104,7 +122,7 @@ async def protected_route(websocket: WebSocket,current_user: dict = Depends(get_
         while True:
             ret, frame = cap.read()
             if ret == False:
-                continue
+                break
             frame = cv2.flip(frame, 1)           
             face_locations= face_recognition.face_locations(frame )
             face_encodings = face_recognition.face_encodings(frame , face_locations)       
@@ -139,15 +157,17 @@ async def protected_route(websocket: WebSocket,current_user: dict = Depends(get_
             elif (nodet ==2) or (nodet % 200) == 0:
                 await websocket.send_text(f"No se detectó ningún rostro aun")      
                 print(f"No se detectó ningún rostro aun")   
-           
-         
-    
-        
-    except WebSocketDisconnect:
+            print(det)
+          
+        return{"error en la camara"}   
+    except WebSocketDisconnect:        
         print("Client disconnected")
-        cap.release()  
+        cap.release() 
+     """ 
 
-    return{"prueba exitosa"}
+
+
+
 EXPO_PUSH_ENDPOINT = "https://exp.host/--/api/v2/push/send"
 
 class Mensaje(BaseModel):
@@ -171,6 +191,8 @@ async def send_notification(mensaje:Mensaje):
     }
     response = requests.post(EXPO_PUSH_ENDPOINT, json=message, headers=headers)
     return {"message": "Notification sent", "response": response.json()}
+
+
 
 
 if __name__ == "__main__":
